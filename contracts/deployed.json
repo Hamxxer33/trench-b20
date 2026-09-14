@@ -1,0 +1,10 @@
+{
+  "factory": "0x4f03402ba3dc942fde77f31b335ae51111129d55",
+  "locker": "0x816ECAff16c44689F01B44b939c4261bf6BF2De7",
+  "escrow": "0x193BcAc66a18B4b7CC47eE975F9917eD9ed0Ae92",
+  "profiles": "0x386c8634893bc6547FDc6C63Cdd2Af2573f4C360",
+  "router": "0x8d984c9f176157b11144c803eefb74cc76e1b708",
+  "platform": "0x8564d4849A520D9373f3FB3BCC91c7400E3089B6",
+  "factoryTx": "0xec4e1b5bbe103c67eabef6e74a769c9f49f1757d9487e336bb94f037ef156f4a",
+  "factoryBlock": 51306713
+}

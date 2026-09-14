@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-void: #07080c;
+  --color-panel: #0e1018;
+  --color-panel2: #141824;
+  --color-paper: #f3f5fa;
+  --color-mute: #8b93a8;
+  --color-line: #1c2130;
+  --color-lime: #7ec8ff;
+  --color-ember: #ff5a5a;
+  --color-ink: #05060a;
+  --font-display: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  background: var(--color-void);
+  color: var(--color-paper);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(900px 500px at 12% -10%, rgba(126, 200, 255, 0.12), transparent 55%),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+  background-size: auto, 22px 22px;
+}
+
+.font-display {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  background: #7eb6ff;
+  color: #071018;
+  font-weight: 650;
+  padding: 0.65rem 1.2rem;
+  box-shadow: 0 0 0 1px rgba(126, 200, 255, 0.25), 0 8px 28px rgba(80, 160, 255, 0.28);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.btn:hover {
+  filter: brightness(1.06);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  color: var(--color-paper);
+  padding: 0.6rem 1.1rem;
+  background: rgba(14, 16, 24, 0.7);
+}
+.btn-ghost:hover {
+  border-color: var(--color-lime);
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.95rem;
+  border: 1px solid var(--color-line);
+  background: #0a0c12;
+  color: var(--color-paper);
+  padding: 0.7rem 0.9rem;
+  outline: none;
+}
+.field:focus {
+  border-color: var(--color-lime);
+}
+
+::selection {
+  background: var(--color-lime);
+  color: #071018;
+}
