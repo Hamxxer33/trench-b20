@@ -7,7 +7,7 @@ export const privyConfig: PrivyClientConfig = {
   loginMethods: ["wallet", "google", "farcaster"],
   appearance: {
     theme: "dark",
-    accentColor: "#7EC8FF",
+    accentColor: "#5BC0FF",
     logo: "/logo.jpg",
     showWalletLoginFirst: true,
     walletChainType: "ethereum-only",

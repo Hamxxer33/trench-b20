@@ -1,18 +1,21 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TokenCard } from "@/components/TokenCard";
 import { TokenMark } from "@/components/Mark";
-import { useLaunches } from "@/lib/useLaunches";
-import { fetchTradeStats, searchLaunches, type TokenVolume } from "@/lib/stats";
+import { BoardControls } from "@/components/BoardControls";
+import { StatStrip } from "@/components/StatStrip";
+import { Ticker } from "@/components/Ticker";
+import { useBoard, type Pair, type Sort } from "@/lib/useBoard";
 import { formatNum, shortAddr, timeAgo } from "@/lib/format";
+import { quoteByAddress } from "@/lib/quotes";
 import { isDeployed } from "@/lib/addresses";
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<p className="font-mono text-sm text-mute">Loading dashboard…</p>}>
+    <Suspense fallback={<div className="skeleton h-64 w-full" />}>
       <DashboardInner />
     </Suspense>
   );
@@ -22,42 +25,36 @@ function DashboardInner() {
   const router = useRouter();
   const params = useSearchParams();
   const q = params.get("q") ?? "";
-  const { launches, total, loading, error } = useLaunches();
-  const [tab, setTab] = useState<"new" | "volume">(q ? "new" : "new");
-  const [vol, setVol] = useState({ volumeEth: 0, trades: 0, byToken: [] as TokenVolume[] });
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchTradeStats().then((s) => {
-      if (!cancelled) setVol(s);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [sort, setSort] = useState<Sort>("new");
+  const [pair, setPair] = useState<Pair>("all");
+  const [view, setView] = useState<"grid" | "table">("grid");
 
-  const filtered = useMemo(() => searchLaunches(launches, q), [launches, q]);
-  const newest = filtered;
-  const byVolume = useMemo(() => {
-    const map = new Map(vol.byToken.map((v) => [v.token.toLowerCase(), v]));
-    return [...filtered]
-      .map((l) => ({ launch: l, vol: map.get(l.token.toLowerCase()) }))
-      .sort((a, b) => (b.vol?.volumeEth ?? 0) - (a.vol?.volumeEth ?? 0));
-  }, [filtered, vol.byToken]);
-
-  const creatorFees = vol.volumeEth * 0.005;
+  const { rows, stats, activity, nameByToken, total, loading, error } = useBoard({ q, sort, pair });
   const deployed = isDeployed();
 
   return (
-    <div className="grid gap-8">
-      <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-lime">Explore</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">Feed</h1>
-        <p className="mt-2 max-w-xl text-mute">
-          Every Trench launch, indexed volume, and creator take. Search a ticker or paste a token address.
-        </p>
+    <div className="grid gap-7">
+      <div className="-mx-4 -mt-10 sm:-mx-6">
+        <Ticker trades={activity} meta={nameByToken} />
+      </div>
+
+      <header className="grid gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="eyebrow">Explore</span>
+            <h1 className="mt-1.5 font-display text-4xl">The board</h1>
+            <p className="mt-2 max-w-xl text-[14px] text-mute">
+              Every Trench launch with its indexed volume. Search a name, a ticker, or paste a token address.
+            </p>
+          </div>
+          <Link href="/launch" className="btn">
+            Launch a token
+          </Link>
+        </div>
+
         <input
-          className="field mt-5 max-w-xl"
+          className="field max-w-xl"
           defaultValue={q}
           placeholder="Search name, $TICKER, or 0x address"
           onKeyDown={(e) => {
@@ -67,94 +64,101 @@ function DashboardInner() {
             }
           }}
         />
-      </div>
+      </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat k="Tokens launched" v={loading ? "…" : String(total)} />
-        <Stat k="Indexed volume" v={`${formatNum(vol.volumeEth, 3)} ETH`} />
-        <Stat k="Trades" v={String(vol.trades)} />
-        <Stat k="Creator earnings" v={`${formatNum(creatorFees, 4)} ETH`} hint="50% of the 1% swap fee" />
+      <StatStrip stats={stats} tokens={total} loading={loading} />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <BoardControls sort={sort} onSort={setSort} pair={pair} onPair={setPair} count={rows.length} />
+        <div className="seg inline-flex">
+          <button type="button" className="seg-item" data-on={view === "grid"} onClick={() => setView("grid")}>
+            Grid
+          </button>
+          <button type="button" className="seg-item" data-on={view === "table"} onClick={() => setView("table")}>
+            Table
+          </button>
+        </div>
       </div>
 
       {q && (
-        <p className="font-mono text-xs text-mute">
-          Results for “{q}” · {filtered.length} token{filtered.length === 1 ? "" : "s"}
+        <p className="tnum text-[11px] text-faint">
+          “{q}” · {rows.length} match{rows.length === 1 ? "" : "es"}
         </p>
       )}
-
-      <div className="flex gap-2">
-        <button className={tabBtn(tab === "new")} type="button" onClick={() => setTab("new")}>
-          New launches
-        </button>
-        <button className={tabBtn(tab === "volume")} type="button" onClick={() => setTab("volume")}>
-          Volume leaderboard
-        </button>
-      </div>
-
+      {!deployed && <p className="text-sm text-ember">Factory address is not configured on this deploy.</p>}
       {error && <p className="text-sm text-ember">{error}</p>}
-      {loading && <p className="font-mono text-sm text-mute">Loading board…</p>}
 
-      {!deployed && <p className="text-sm text-ember">Factory is not configured.</p>}
-
-      {tab === "new" && (
-        <div className="grid gap-3">
-          {newest.length === 0 && !loading && <p className="text-mute">No launches match.</p>}
-          {newest.map((l) => (
-            <TokenCard key={l.token} launch={l} />
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="skeleton h-48 w-full rounded-2xl" />
           ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="card grid place-items-center p-12 text-center">
+          <p className="font-display text-xl">No matches</p>
+          <p className="mt-2 text-sm text-mute">Try a different ticker, or clear the filters.</p>
+        </div>
+      ) : view === "grid" ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {rows.map((r, i) => (
+            <TokenCard key={r.token} launch={r} rank={sort === "volume" ? i : undefined} />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-line">
+          <table className="w-full min-w-[42rem] border-collapse">
+            <thead>
+              <tr className="bg-panel2">
+                {["#", "Token", "Pair", "Volume", "Fills", "Age"].map((h, i) => (
+                  <th
+                    key={h}
+                    className={`eyebrow px-4 py-2.5 ${i > 2 ? "text-right" : "text-left"}`}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const qa = quoteByAddress(r.quote);
+                return (
+                  <tr key={r.token} className="border-t border-line hover:bg-panel2">
+                    <td className="tnum px-4 py-3 text-xs text-faint">{i + 1}</td>
+                    <td className="px-4 py-3">
+                      <Link href={`/token/${r.token}`} className="flex min-w-0 items-center gap-3">
+                        <TokenMark address={r.token} src={r.image || undefined} size={32} />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold">{r.name}</span>
+                          <span className="tnum text-[11px] text-lime">${r.symbol}</span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="tnum text-xs text-mute">{qa.symbol}</span>
+                    </td>
+                    <td className="tnum px-4 py-3 text-right text-xs">
+                      {r.volumeQuote > 0 ? `${formatNum(r.volumeQuote, 3)} ${qa.symbol}` : "—"}
+                    </td>
+                    <td className="tnum px-4 py-3 text-right text-xs text-mute">{r.trades || "—"}</td>
+                    <td className="tnum px-4 py-3 text-right text-[11px] text-faint">
+                      {r.createdAt ? timeAgo(r.createdAt) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {tab === "volume" && (
-        <div className="overflow-hidden rounded-2xl border border-line">
-          <div className="grid grid-cols-[2.5rem_1fr_7rem_7rem] gap-2 bg-panel2 px-4 py-2 font-mono text-[11px] uppercase text-mute">
-            <span>#</span>
-            <span>Token</span>
-            <span className="text-right">Volume</span>
-            <span className="text-right">Trades</span>
-          </div>
-          {byVolume.length === 0 && !loading && <p className="px-4 py-8 text-mute">No volume yet. Buy something.</p>}
-          {byVolume.map((row, i) => (
-            <Link
-              key={row.launch.token}
-              href={`/token/${row.launch.token}`}
-              className="grid grid-cols-[2.5rem_1fr_7rem_7rem] items-center gap-2 border-t border-line px-4 py-3 hover:bg-panel2"
-            >
-              <span className="font-mono text-xs text-mute">{i + 1}</span>
-              <span className="flex min-w-0 items-center gap-3">
-                <TokenMark address={row.launch.token} src={row.launch.image || undefined} size={32} />
-                <span className="min-w-0">
-                  <span className="block truncate font-display">{row.launch.name}</span>
-                  <span className="font-mono text-[11px] text-lime">${row.launch.symbol}</span>
-                </span>
-              </span>
-              <span className="text-right font-mono text-xs">{formatNum(row.vol?.volumeEth ?? 0, 3)} ETH</span>
-              <span className="text-right font-mono text-xs text-mute">{row.vol?.trades ?? 0}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {newest[0] && tab === "new" && (
-        <p className="font-mono text-[11px] text-mute">
-          Latest {shortAddr(newest[0].token)}
-          {newest[0].createdAt ? ` · ${timeAgo(newest[0].createdAt)}` : ""}
+      {rows[0] && (
+        <p className="tnum text-[10px] text-faint">
+          Newest {shortAddr(rows[0].token)}
+          {rows[0].createdAt ? ` · ${timeAgo(rows[0].createdAt)}` : ""}
         </p>
       )}
     </div>
   );
-}
-
-function Stat({ k, v, hint }: { k: string; v: string; hint?: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-panel p-4">
-      <div className="font-mono text-[11px] uppercase text-mute">{k}</div>
-      <div className="mt-1 font-display text-3xl">{v}</div>
-      {hint && <div className="mt-1 font-mono text-[10px] text-mute">{hint}</div>}
-    </div>
-  );
-}
-
-function tabBtn(on: boolean) {
-  return `rounded-full px-4 py-1.5 text-sm ${on ? "bg-lime text-white" : "border border-line text-mute"}`;
 }

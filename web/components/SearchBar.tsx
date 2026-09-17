@@ -63,21 +63,21 @@ export function SearchBar() {
         }}
       />
       {open && q.trim() && (
-        <div className="absolute top-11 z-40 w-full overflow-hidden rounded-2xl border border-line bg-panel shadow-xl">
+        <div className="absolute top-11 z-40 w-full overflow-hidden rounded-xl border border-line2 bg-panel shadow-2xl">
           {hits.length === 0 ? (
-            <p className="px-3 py-3 font-mono text-xs text-mute">No matches on Trench.</p>
+            <p className="tnum px-3 py-3 text-xs text-faint">No matches on Trench.</p>
           ) : (
             hits.map((h) => (
               <button
                 key={h.token}
                 type="button"
-                className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-panel2"
+                className="flex w-full items-center gap-3 border-b border-line px-3 py-2 text-left last:border-0 hover:bg-panel2"
                 onClick={() => go(h.token)}
               >
                 <TokenMark address={h.token} src={h.image || undefined} size={28} />
                 <span className="min-w-0 flex-1 truncate text-sm">{h.name}</span>
-                <span className="font-mono text-[11px] text-lime">${h.symbol}</span>
-                <span className="font-mono text-[10px] text-mute">{shortAddr(h.token)}</span>
+                <span className="tnum text-[11px] text-lime">${h.symbol}</span>
+                <span className="tnum text-[10px] text-faint">{shortAddr(h.token)}</span>
               </button>
             ))
           )}

@@ -126,48 +126,63 @@ export function TradePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-panel p-5">
-      <div className="mb-4 grid grid-cols-2 rounded-full bg-void p-1">
+    <div className="card p-5">
+      <div className="seg mb-4 grid w-full grid-cols-2">
         <button
-          className={`rounded-full py-2 text-sm ${side === "buy" ? "bg-lime text-[#071018]" : "text-mute"}`}
+          className="seg-item text-center font-semibold"
+          data-on={side === "buy"}
+          style={side === "buy" ? { background: "rgba(47,212,143,0.16)", color: "var(--color-up)" } : undefined}
           onClick={() => setSide("buy")}
           type="button"
         >
           Buy
         </button>
         <button
-          className={`rounded-full py-2 text-sm ${side === "sell" ? "bg-ember text-paper" : "text-mute"}`}
+          className="seg-item text-center font-semibold"
+          data-on={side === "sell"}
+          style={side === "sell" ? { background: "rgba(251,111,132,0.16)", color: "var(--color-down)" } : undefined}
           onClick={() => setSide("sell")}
           type="button"
         >
           Sell
         </button>
       </div>
+
       <label className="grid gap-1.5">
-        <span className="font-mono text-[11px] uppercase text-mute">
-          {side === "buy" ? `${q.symbol} in` : `${symbol} in`}
-        </span>
+        <span className="eyebrow">{side === "buy" ? `${q.symbol} in` : `${symbol} in`}</span>
         <input
-          className="field text-lg"
+          className="field tnum text-lg"
           inputMode="decimal"
           placeholder="0.0"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
       </label>
+
       {address && (
-        <p className="mt-2 font-mono text-[11px] text-mute">
+        <p className="tnum mt-2 text-[11px] text-faint">
           Wallet {formatNum(Number(formatUnits(tokenBal ?? 0n, 18)), 6)} {symbol}
-          {!isEth && quoteBal !== undefined ? ` · ${formatNum(Number(formatUnits(quoteBal, q.decimals)), 4)} ${q.symbol}` : ""}
+          {!isEth && quoteBal !== undefined
+            ? ` · ${formatNum(Number(formatUnits(quoteBal, q.decimals)), 4)} ${q.symbol}`
+            : ""}
         </p>
       )}
-      {error && <p className="mt-3 text-sm text-ember">{error}</p>}
-      {status && <p className="mt-3 font-mono text-xs text-lime">{status}</p>}
+
+      {error && (
+        <p className="mt-3 rounded-lg border border-ember/40 bg-ember/10 px-3 py-2 text-[13px] text-ember">{error}</p>
+      )}
+      {status && <p className="tnum mt-3 text-xs text-lime">{status}</p>}
       {tx && (
-        <a className="mt-2 block font-mono text-[11px] text-lime underline" href={txUrl(tx)} target="_blank" rel="noreferrer">
-          View on Basescan
+        <a
+          className="tnum mt-2 block text-[11px] text-lime underline"
+          href={txUrl(tx)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View on Basescan ↗
         </a>
       )}
+
       <button className="btn mt-4 h-12 w-full" type="button" disabled={isPending} onClick={() => void submit()}>
         {isPending
           ? "Confirm…"
@@ -177,8 +192,9 @@ export function TradePanel({
               ? `Buy ${symbol} with ${q.symbol}`
               : `Sell ${symbol}`}
       </button>
-      <p className="mt-3 font-mono text-[11px] text-mute">
-        Pair {q.symbol} · 1% fee in {q.symbol} · 50/30/20
+
+      <p className="tnum mt-3 text-[11px] text-faint">
+        Pair {q.symbol} · 1% fee in {q.symbol} · 50 / 30 / 20
       </p>
     </div>
   );

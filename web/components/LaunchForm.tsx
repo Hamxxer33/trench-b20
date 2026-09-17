@@ -141,50 +141,55 @@ export function LaunchForm() {
       }}
     >
       <div className="grid gap-3">
-        <span className="font-mono text-[11px] uppercase tracking-wide text-mute">Pair</span>
-        <div className="grid grid-cols-2 rounded-full bg-panel p-1">
+        <span className="eyebrow">Pair against</span>
+        <div className="seg grid w-full grid-cols-2">
           <button
             type="button"
-            className={`rounded-full py-2 text-sm ${market === "eth" ? "bg-lime text-[#071018]" : "text-mute"}`}
+            className="seg-item text-center"
+            data-on={market === "eth"}
             onClick={() => {
               setMarket("eth");
               setQuote(ZERO);
             }}
           >
-            ETH
+            ◆ ETH
           </button>
           <button
             type="button"
-            className={`rounded-full py-2 text-sm ${market === "stock" ? "bg-lime text-[#071018]" : "text-mute"}`}
+            className="seg-item text-center"
+            data-on={market === "stock"}
             onClick={() => {
               setMarket("stock");
               setQuote(STOCK_QUOTES[0].address);
             }}
           >
-            Stocks
+            ▮ Base stocks
           </button>
         </div>
         {market === "stock" && (
-          <div className="flex flex-wrap gap-2">
-            {STOCK_QUOTES.map((s) => (
-              <button
-                key={s.symbol}
-                type="button"
-                className={`rounded-full border px-3 py-1.5 font-mono text-xs ${
-                  quote.toLowerCase() === s.address.toLowerCase()
-                    ? "border-lime bg-lime/10 text-paper"
-                    : "border-line text-mute"
-                }`}
-                onClick={() => setQuote(s.address)}
-              >
-                {s.symbol}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-1.5">
+            {STOCK_QUOTES.map((s) => {
+              const on = quote.toLowerCase() === s.address.toLowerCase();
+              return (
+                <button
+                  key={s.symbol}
+                  type="button"
+                  title={s.name}
+                  className={on ? "pill pill-gold" : "pill hover:border-lime hover:text-lime"}
+                  onClick={() => setQuote(s.address)}
+                >
+                  {s.symbol}
+                </button>
+              );
+            })}
           </div>
         )}
-        <p className="font-mono text-[11px] text-mute">
-          Buyers pay {market === "eth" ? "ETH" : STOCK_QUOTES.find((s) => s.address.toLowerCase() === quote.toLowerCase())?.symbol ?? "stock"} ·
-          you still launch a B20
+        <p className="tnum text-[11px] text-faint">
+          Buyers spend{" "}
+          {market === "eth"
+            ? "ETH"
+            : (STOCK_QUOTES.find((s) => s.address.toLowerCase() === quote.toLowerCase())?.symbol ?? "the stock")}{" "}
+          — you still launch a B20. Gas is always ETH.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -202,7 +207,7 @@ export function LaunchForm() {
         </Field>
       </div>
       <div className="grid gap-1.5">
-        <span className="font-mono text-[11px] uppercase tracking-wide text-mute">Logo</span>
+        <span className="eyebrow">Logo</span>
         <LogoDrop value={image} onChange={setImage} />
       </div>
       <Field label="Description">
@@ -226,21 +231,30 @@ export function LaunchForm() {
         </Field>
       </div>
 
-      <label className="flex items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3 text-sm">
+      <label className="flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 text-sm">
         <input type="checkbox" checked={editable} onChange={(e) => setEditable(e.target.checked)} />
         Allow me to edit this token’s public profile after launch
       </label>
 
-      <div className="rounded-2xl border border-line bg-panel p-4 font-mono text-xs leading-relaxed text-mute">
-        <div>Supply 1,000,000,000 · 18 decimals · B20 Asset</div>
-        <div>Admin-less. Cap equals supply. Liquidity locked.</div>
-        <div>Swap fee 1% in the paired asset → 50% creator / 30% platform / 20% referral</div>
-        <div>Anti-snipe 99% → 1% over 20s · launch is free (Base gas only)</div>
-        <div>Vanity suffix …b20</div>
+      <div className="card p-4">
+        <p className="eyebrow mb-2.5">What gets deployed</p>
+        <dl className="grid gap-x-8 gap-y-2 text-[12px] sm:grid-cols-2">
+          <Spec k="Supply" v="1,000,000,000 · 18 decimals" />
+          <Spec k="Owner" v="None — admin-less" />
+          <Spec k="Liquidity" v="Locked forever" />
+          <Spec k="Swap fee" v="1% → 50 / 30 / 20" />
+          <Spec k="Anti-snipe" v="99% → 1% over 20s" />
+          <Spec k="Address" v="Vanity suffix …b20" />
+        </dl>
       </div>
 
-      {error && <p className="rounded-xl bg-ember/15 px-3 py-2 text-sm text-ember">{error}</p>}
-      {status && <p className="font-mono text-xs text-lime">{status}</p>}
+      {error && <p className="rounded-xl border border-ember/40 bg-ember/10 px-3 py-2.5 text-sm text-ember">{error}</p>}
+      {status && (
+        <p className="tnum flex items-center gap-2 rounded-xl border border-lime/30 bg-lime/10 px-3 py-2.5 text-xs text-lime">
+          <span className="live-dot" style={{ background: "currentColor" }} />
+          {status}
+        </p>
+      )}
 
       <button className="btn h-12 text-base" type="submit" disabled={isPending}>
         {isPending ? "Launching…" : "Launch B20"}
@@ -249,10 +263,19 @@ export function LaunchForm() {
   );
 }
 
+function Spec({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-line/60 pb-1.5">
+      <dt className="shrink-0 text-faint">{k}</dt>
+      <dd className="tnum text-right text-paper">{v}</dd>
+    </div>
+  );
+}
+
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="grid gap-1.5">
-      <span className="font-mono text-[11px] uppercase tracking-wide text-mute">
+      <span className="eyebrow">
         {label}
         {required ? " *" : ""}
       </span>

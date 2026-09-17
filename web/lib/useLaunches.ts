@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { usePublicClient } from "wagmi";
 import type { Address } from "viem";
 import { erc20Abi, factoryAbi } from "./abi";
-import { FACTORY, isDeployed } from "./addresses";
+import { FACTORY, ZERO, isDeployed } from "./addresses";
 import type { Launch } from "@/components/TokenCard";
+
+const PAGE = 80n;
 
 export function useLaunches() {
   const client = usePublicClient();
@@ -32,18 +34,24 @@ export function useLaunches() {
           if (!cancelled) setLaunches([]);
           return;
         }
+
+        // Newest first: read the tail of the factory's array, not the head.
+        const limit = count < PAGE ? count : PAGE;
+        const offset = count - limit;
         const addrs = await client.readContract({
           address: FACTORY,
           abi: factoryAbi,
           functionName: "tokens",
-          args: [0n, 80n],
+          args: [offset, limit],
         });
+
         const rows: Launch[] = await Promise.all(
           addrs.map(async (token) => {
             let creator = token as Address;
             let createdAt = 0;
             let image = "";
             let description = "";
+            let quote = ZERO as Address;
             let name = "Token";
             let symbol = "TKN";
             try {
@@ -55,6 +63,7 @@ export function useLaunches() {
               });
               creator = profile[1] || profile[0];
               createdAt = Number(profile[3]);
+              quote = profile[7];
               image = profile[8];
               description = profile[9];
             } catch {
@@ -66,9 +75,12 @@ export function useLaunches() {
             } catch {
               /* ignore */
             }
-            return { token, creator, name, symbol, createdAt, image, description };
+            return { token, creator, name, symbol, createdAt, image, description, quote };
           }),
         );
+
+        // The factory appends, so the tail comes back oldest-first.
+        rows.reverse();
         if (!cancelled) setLaunches(rows);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load launches");

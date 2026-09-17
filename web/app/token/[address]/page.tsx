@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount, useReadContract } from "wagmi";
@@ -10,8 +10,11 @@ import { BASESCAN, FACTORY, V4_STATE_VIEW, ZERO } from "@/lib/addresses";
 import { fdvEthFromSqrtPrice, formatNum, poolId, shortAddr, timeAgo } from "@/lib/format";
 import { quoteByAddress } from "@/lib/quotes";
 import { referralLink } from "@/lib/referral";
+import { getToken, type TokenStats } from "@/lib/api";
 import { TokenMark } from "@/components/Mark";
+import { PairBadge } from "@/components/TokenCard";
 import { TradePanel } from "@/components/TradePanel";
+import { TradeFeed } from "@/components/TradeFeed";
 import { PriceChart } from "@/components/PriceChart";
 
 export default function TokenPage() {
@@ -20,6 +23,7 @@ export default function TokenPage() {
   const valid = isAddress(token);
   const { address } = useAccount();
   const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState<TokenStats | null>(null);
 
   const { data: name } = useReadContract({
     address: token,
@@ -49,6 +53,21 @@ export default function TokenPage() {
     query: { enabled: !!id },
   });
 
+  useEffect(() => {
+    if (!valid) return;
+    let cancelled = false;
+    getToken(token)
+      .then((r) => {
+        if (!cancelled) setStats(r.stats);
+      })
+      .catch(() => {
+        /* not indexed yet — the page still works from chain reads */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, valid]);
+
   if (!valid) return <p className="text-ember">Not a token address.</p>;
 
   const creator = profile?.[1] ?? profile?.[0];
@@ -60,6 +79,7 @@ export default function TokenPage() {
   const twitter = profile?.[11] ?? "";
   const telegram = profile?.[12] ?? "";
   const fdv = slot0 ? fdvEthFromSqrtPrice(slot0[0]) : 0;
+  const q = quoteByAddress(quote);
 
   function copyRef() {
     if (!address) return;
@@ -70,80 +90,111 @@ export default function TokenPage() {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-      <div>
-        <div className="flex items-start gap-4">
+    <div className="grid gap-6">
+      {/* Identity bar */}
+      <div className="card p-5">
+        <div className="flex flex-wrap items-start gap-4">
           <TokenMark address={token} src={image || undefined} size={64} />
-          <div>
-            <h1 className="text-4xl font-semibold tracking-tight">{name ?? "…"}</h1>
-            <p className="font-mono text-sm text-lime">
-              ${symbol ?? ""} · {quoteByAddress(quote).symbol}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-3xl sm:text-4xl">{name ?? "…"}</h1>
+              <PairBadge quote={quote} />
+            </div>
+            <p className="tnum mt-1.5 text-sm text-lime">
+              ${symbol ?? ""} <span className="text-faint">/ {q.symbol}</span>
             </p>
-            <p className="mt-1 font-mono text-[11px] text-mute">
+            <p className="tnum mt-1 text-[11px] text-faint">
               {shortAddr(token)}
-              {createdAt ? ` · ${timeAgo(createdAt)}` : ""}
+              {createdAt ? ` · launched ${timeAgo(createdAt)} ago` : ""}
             </p>
           </div>
-        </div>
-        {description && <p className="mt-6 max-w-xl text-mute">{description}</p>}
-
-        <div className="mt-8">
-          <PriceChart token={token} />
-        </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat k="FDV" v={fdv ? `${formatNum(fdv, 3)} ETH` : "—"} />
-          <Stat k="Supply" v="1B" />
-          <Stat k="Fee" v="50/30/20" />
-          <Stat k="LP" v="locked" />
+          <div className="flex flex-wrap gap-2">
+            <a className="btn-ghost text-[13px]" href={`${BASESCAN}/token/${token}`} target="_blank" rel="noreferrer">
+              Basescan ↗
+            </a>
+            {address && (
+              <button className="btn-ghost text-[13px]" type="button" onClick={copyRef}>
+                {copied ? "Copied ✓" : "Referral link"}
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-2 font-mono text-xs">
-          <a className="btn-ghost" href={`${BASESCAN}/token/${token}`} target="_blank" rel="noreferrer">
-            Basescan
-          </a>
+        {description && <p className="mt-4 max-w-2xl text-[14px] leading-relaxed text-mute">{description}</p>}
+
+        <div className="mt-5 flex flex-wrap gap-2 text-[12.5px]">
           {website && (
-            <a className="btn-ghost" href={website} target="_blank" rel="noreferrer">
-              Website
+            <a className="pill hover:border-lime hover:text-lime" href={website} target="_blank" rel="noreferrer">
+              Website ↗
             </a>
           )}
           {twitter && (
-            <a className="btn-ghost" href={`https://x.com/${twitter}`} target="_blank" rel="noreferrer">
-              X
+            <a
+              className="pill hover:border-lime hover:text-lime"
+              href={`https://x.com/${twitter}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              @{twitter} ↗
             </a>
           )}
           {telegram && (
             <a
-              className="btn-ghost"
+              className="pill hover:border-lime hover:text-lime"
               href={telegram.startsWith("http") ? telegram : `https://t.me/${telegram}`}
               target="_blank"
               rel="noreferrer"
             >
-              Telegram
+              Telegram ↗
             </a>
           )}
           {creator && creator !== ZERO && (
-            <Link className="btn-ghost" href={`/profile/${creator}`}>
+            <Link className="pill hover:border-lime hover:text-lime" href={`/profile/${creator}`}>
               creator {shortAddr(creator)}
             </Link>
           )}
-          {address && (
-            <button className="btn-ghost" type="button" onClick={copyRef}>
-              {copied ? "Copied" : "Referral link"}
-            </button>
-          )}
         </div>
       </div>
-      <TradePanel token={token} symbol={symbol ?? "TOKEN"} quote={quote} />
+
+      {/* Market stats */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 lg:grid-cols-6">
+        <Stat k="FDV" v={fdv ? `${formatNum(fdv, 3)} ETH` : "—"} />
+        <Stat k={`Volume · ${q.symbol}`} v={stats ? formatNum(stats.volumeQuote, 3) : "—"} />
+        <Stat k="Fills" v={stats ? formatNum(stats.trades, 0) : "—"} />
+        <Stat
+          k="Buy / sell"
+          v={stats && stats.trades > 0 ? `${stats.buys} / ${stats.sells}` : "—"}
+          tone={stats && stats.buys > stats.sells ? "up" : stats && stats.sells > stats.buys ? "down" : undefined}
+        />
+        <Stat k="Supply" v="1B" />
+        <Stat k="Liquidity" v="Locked" tone="up" />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="grid gap-6">
+          <PriceChart token={token} />
+          <TradeFeed token={token} />
+        </div>
+        <div className="grid gap-4 lg:sticky lg:top-24">
+          <TradePanel token={token} symbol={symbol ?? "TOKEN"} quote={quote} />
+          <div className="card p-4 text-[12px] leading-relaxed text-faint">
+            <p className="eyebrow mb-2">Fees</p>
+            Every swap pays 1% of {q.symbol}: 50% to the creator, 30% to the platform, 20% to the
+            referrer. For the first 20 seconds the fee starts at 99% and decays to 1% — anti-snipe,
+            and the excess goes to the platform.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function Stat({ k, v }: { k: string; v: string }) {
+function Stat({ k, v, tone }: { k: string; v: string; tone?: "up" | "down" }) {
+  const color = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-paper";
   return (
-    <div className="rounded-2xl border border-line bg-panel p-4">
-      <div className="font-mono text-[11px] uppercase text-mute">{k}</div>
-      <div className="mt-1 font-display text-2xl">{v}</div>
+    <div className="bg-panel px-4 py-3">
+      <div className="eyebrow">{k}</div>
+      <div className={`tnum mt-1 text-[15px] ${color}`}>{v}</div>
     </div>
   );
 }
