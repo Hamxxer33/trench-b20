@@ -67,10 +67,19 @@ npm install
 npm run dev
 ```
 
-- `/` board
+- `/` board — live fill tape, spotlight token, stat strip, sortable tile grid
+- `/dashboard` full board — grid or table, search, sort and pair filters
 - `/launch` create
-- `/token/[address]` trade + token referral link
+- `/token/[address]` chart, market stats, live fills, trade panel, referral link
 - `/profile/[address]` identity, fee claim, global referral, launches
+
+Sort by New, Top volume or Most traded; filter by ETH or stock pairs. Volume on
+a tile is denominated in that pool's own quote asset, so an AAPL-paired token
+reads in AAPL and never gets added to an ETH total.
+
+The site is browsable without `NEXT_PUBLIC_PRIVY_APP_ID` — the board, charts
+and contract reads all work from Base, and only login is disabled. Set the key
+to enable wallet, Google and Farcaster login.
 
 ## Backend
 
