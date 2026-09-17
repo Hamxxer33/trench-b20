@@ -72,6 +72,50 @@ npm run dev
 - `/token/[address]` trade + token referral link
 - `/profile/[address]` identity, fee claim, global referral, launches
 
+## Backend
+
+Next.js route handlers under `web/app/api`. Base is the source of truth; the
+database is an index in front of it.
+
+**Every write is proved against the chain first.** A client posts a tx hash and
+nothing else that counts — the server pulls the receipt, finds the `Launched`
+event from our factory or the `Trade` event from our router, and stores what
+those say. Amounts, side, trader and quote asset are never taken from the
+request body, so the volume on the board cannot be inflated by anyone holding
+the anon key (it ships in the bundle — it always was public).
+
+| Route | Does |
+| --- | --- |
+| `GET /api/tokens` | board, with `?q=`, `?creator=`, paging |
+| `POST /api/tokens` | index a launch from `{ tx_hash }` |
+| `GET /api/tokens/[address]` | one token + its rolled-up stats |
+| `GET /api/trades` | fills, by `?token=` or `?trader=` |
+| `POST /api/trades` | index a fill from `{ tx_hash }` |
+| `GET /api/stats` | totals + top tokens, aggregated in Postgres |
+| `GET /api/profiles/[address]` | cached profile, falls back to a live read |
+| `POST /api/profiles/[address]` | refresh that cache from `TrenchProfiles` |
+| `POST /api/upload` | launch logo, type-sniffed, service-role write |
+| `GET /api/health` | which env vars actually landed on this deploy |
+
+**Stock pairs count now.** The old client hardcoded `amount_eth: 0` for
+anything not paired against ETH, so every AAPL- or TSLA-paired fill recorded as
+zero volume. Trades carry `quote` and `amount_quote` scaled by that asset's own
+decimals (8 for a stock B20, 18 for ETH); `amount_eth` stays populated only for
+ETH pairs, so "volume in ETH" never sums Apple shares into it.
+
+Setup:
+
+1. Supabase → SQL editor → run `supabase/schema.sql`. Upgrading an existing
+   database instead: run `supabase/migrations/0001_backend.sql` first, then
+   `schema.sql` (it is idempotent).
+2. Set `SUPABASE_SERVICE_ROLE_KEY` in Vercel. **Server-side only** — the
+   `NEXT_PUBLIC_` prefix would publish it, and it bypasses RLS.
+3. Hit `/api/health` after deploying. `ready: true` means the keys, the RPC and
+   the database all answered.
+
+RLS is now read-only for the anon key; writes happen with the service role
+behind the API. `npm test` in `web/` covers the decode and the amount scaling.
+
 ## GitHub / Vercel
 
 Do **not** commit `.env`, `.env.local`, or `.env.production`. Copy `web/.env.example` locally, and paste the same `NEXT_PUBLIC_*` keys into the Vercel project settings. Never add `PRIVATE_KEY`.

@@ -121,15 +121,9 @@ export function LaunchForm() {
       );
       const token = (mined.token ?? predictB20Address(FACTORY, mined.salt)) as Address;
       if (!sent.ok) throw new Error("Launch transaction reverted.");
-      void indexToken({
-        address: token,
-        name: name.trim(),
-        symbol: symbol.trim().toUpperCase(),
-        creator: address,
-        image: imageUrl,
-        description: description.trim(),
-        tx_hash: sent.hash,
-      });
+      // The server re-reads the receipt and the factory profile, so the hash
+      // is all it needs — nothing typed above is taken on trust.
+      void indexToken({ tx_hash: sent.hash, address: token });
       setStatus(`Live · ${shortAddr(sent.hash)}`);
       router.push(`/token/${token}`);
     } catch (e) {

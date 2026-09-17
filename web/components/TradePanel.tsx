@@ -116,13 +116,9 @@ export function TradePanel({
       setAmount("");
       await refetchBal();
       setTimeout(() => void refetchBal(), 2000);
-      void indexTrade({
-        token,
-        trader: address,
-        is_buy: side === "buy",
-        amount_eth: isEth && side === "buy" ? Number(amount) : 0,
-        tx_hash: result.hash,
-      });
+      // Side, size and quote asset come out of the router's Trade event
+      // server-side — that is what makes stock-paired volume count too.
+      void indexTrade({ tx_hash: result.hash, token });
     } catch (e) {
       setStatus("");
       setError(friendlyError(e));

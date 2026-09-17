@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { hasSupabase, uploadLogo } from "@/lib/supabase";
+import { uploadLogo } from "@/lib/api";
 
 export function LogoDrop({ value, onChange }: { value: string; onChange: (url: string) => void }) {
   const [busy, setBusy] = useState(false);
@@ -22,14 +22,16 @@ export function LogoDrop({ value, onChange }: { value: string; onChange: (url: s
       setErr("");
       setBusy(true);
       try {
-        if (hasSupabase()) {
-          onChange(await uploadLogo(file));
-        } else {
-          onChange(URL.createObjectURL(file));
-          setErr("Logo preview only until you add Supabase keys — paste URL to store it onchain.");
-        }
+        // The server owns storage now, so we just try it and fall back to a
+        // local preview if the backend is not configured on this deploy.
+        onChange(await uploadLogo(file));
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Upload failed");
+        onChange(URL.createObjectURL(file));
+        setErr(
+          e instanceof Error && !/failed|not configured/i.test(e.message)
+            ? e.message
+            : "Preview only — storage is not configured. Paste an image URL to store it onchain.",
+        );
       } finally {
         setBusy(false);
       }
