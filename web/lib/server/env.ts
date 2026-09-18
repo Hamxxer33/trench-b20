@@ -7,24 +7,33 @@ import { FACTORY, ROUTER, ZERO } from "../addresses";
  * `server-only` makes that a build error rather than a leaked service key.
  */
 
-function req(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
-}
-
+// `||` rather than `??`: Vercel passes an unset variable through as an empty
+// string, which `??` would accept as a real value.
 export const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 
 /** Service-role key. Bypasses RLS, so it must stay server-side. */
-export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 export function hasAdminSupabase() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
 }
 
+/**
+ * Resolves from the constants above, so the NEXT_PUBLIC_SUPABASE_URL fallback
+ * applies here too.
+ *
+ * This used to re-read `process.env.SUPABASE_URL` on its own, with no
+ * fallback, while `hasAdminSupabase()` consulted the constant that has one.
+ * A project setting only NEXT_PUBLIC_SUPABASE_URL — which is what the README
+ * asks for, since the bare name is documented as optional — passed the guard
+ * and then threw here, turning every API route into a 503 that read as
+ * "Backend is not configured yet".
+ */
 export function requireAdminSupabase() {
-  return { url: req("SUPABASE_URL"), key: req("SUPABASE_SERVICE_ROLE_KEY") };
+  if (!SUPABASE_URL) throw new Error("Missing SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL");
+  if (!SUPABASE_SERVICE_KEY) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+  return { url: SUPABASE_URL, key: SUPABASE_SERVICE_KEY };
 }
 
 /**

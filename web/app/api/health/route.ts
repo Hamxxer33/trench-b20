@@ -4,7 +4,6 @@ import {
   SERVER_ROUTER,
   SUPABASE_SERVICE_KEY,
   SUPABASE_URL,
-  hasAdminSupabase,
   hasChainConfig,
 } from "@/lib/server/env";
 import { handleError, ok } from "@/lib/server/http";
@@ -49,6 +48,9 @@ export async function GET() {
       // Distinct from `supabaseUrl`: with the URL set but the key missing, every
       // write 503s while reads look fine, which is easy to misread as healthy.
       serviceKey: Boolean(SUPABASE_SERVICE_KEY),
+      // Pure local read of the key's own claim, so it still reports when the
+      // client below cannot even be constructed.
+      keyRole: roleOf(SUPABASE_SERVICE_KEY),
       contracts: hasChainConfig(),
       factory: SERVER_FACTORY || null,
       router: SERVER_ROUTER || null,
@@ -63,21 +65,22 @@ export async function GET() {
       }
     }
 
-    if (hasAdminSupabase()) {
+    // Wrapped: this endpoint exists to explain a broken backend, so it must
+    // report the breakage rather than become another 503 through handleError.
+    try {
       const sb = supabaseAdmin();
 
+      // A network-level failure surfaces as an error with an empty message, so
+      // never report a blank string — it reads as "no problem here".
       const { error: readError } = await sb.from("tokens").select("address", { head: true, count: "exact" });
-      checks.dbRead = readError ? readError.message : "ok";
-
-      // RLS now blocks every write that is not service-role, so "can read" no
-      // longer implies "can index". Checked by reading the key's own role claim
-      // rather than by writing: a probe row would have to be inserted into
-      // `tokens`, and that lands on the board.
-      checks.keyRole = roleOf(SUPABASE_SERVICE_KEY);
+      checks.dbRead = readError ? readError.message || "read failed" : "ok";
 
       // Aggregation lives in Postgres; a missing function only shows up here.
       const { error: rpcError } = await sb.rpc("trade_totals");
-      checks.aggregates = rpcError ? rpcError.message : "ok";
+      checks.aggregates = rpcError ? rpcError.message || "rpc failed" : "ok";
+    } catch (e) {
+      checks.dbRead = (e instanceof Error && e.message) || "unavailable";
+      checks.aggregates = "skipped";
     }
 
     const ready =
