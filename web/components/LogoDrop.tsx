@@ -16,22 +16,21 @@ export function LogoDrop({ value, onChange }: { value: string; onChange: (url: s
         return;
       }
       if (file.size > 3 * 1024 * 1024) {
-        setErr("Keep it under 3MB.");
+        setErr(`That is ${(file.size / 1024 / 1024).toFixed(1)}MB — keep it under 3MB.`);
         return;
       }
       setErr("");
       setBusy(true);
       try {
-        // The server owns storage now, so we just try it and fall back to a
-        // local preview if the backend is not configured on this deploy.
         onChange(await uploadLogo(file));
       } catch (e) {
+        // Say what actually went wrong. This used to rewrite any message
+        // matching /failed|not configured/ into "storage is not configured",
+        // which meant a backend returning 503 for an unrelated reason was
+        // reported as a missing storage setup — untrue, and not actionable.
         onChange(URL.createObjectURL(file));
-        setErr(
-          e instanceof Error && !/failed|not configured/i.test(e.message)
-            ? e.message
-            : "Preview only — storage is not configured. Paste an image URL to store it onchain.",
-        );
+        const detail = e instanceof Error && e.message ? e.message : "Upload failed.";
+        setErr(`${detail} Shown as a preview only — it will not be saved. Paste an image URL instead.`);
       } finally {
         setBusy(false);
       }

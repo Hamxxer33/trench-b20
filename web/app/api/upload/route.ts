@@ -42,10 +42,21 @@ export async function POST(req: Request) {
     }
 
     const spec = TYPES[file.type];
-    if (!spec) throw new BadRequest("PNG, JPEG, GIF or WebP only");
+    if (!spec) {
+      // Name the format we got. Phones are the common case here and an iPhone
+      // hands over HEIC, which a bare "PNG, JPEG, GIF or WebP only" does not
+      // help anyone act on.
+      const heic = /heic|heif/i.test(file.type);
+      throw new BadRequest(
+        `${file.type || "That file"} is not a supported image — use PNG, JPEG, GIF or WebP.` +
+          (heic
+            ? " iPhone photos save as HEIC: set Settings → Camera → Formats to Most Compatible, or screenshot the image and upload that."
+            : ""),
+      );
+    }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
-    if (!spec.sniff(bytes)) throw new BadRequest("That file is not really a " + file.type);
+    if (!spec.sniff(bytes)) throw new BadRequest(`That file is not really ${file.type}`);
 
     const path = `${Date.now()}-${crypto.randomUUID()}.${spec.ext}`;
     const sb = supabaseAdmin();
