@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Address } from "viem";
+import { FACTORY, ROUTER, ZERO } from "../addresses";
 
 /**
  * Server-side configuration. Never import this from a "use client" module —
@@ -36,13 +36,15 @@ export const SERVER_RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL ??
   "https://mainnet.base.org";
 
-/** Addresses the verifier trusts. Anything not emitted by these is rejected. */
-export const SERVER_FACTORY = (process.env.NEXT_PUBLIC_FACTORY ?? "") as Address;
-export const SERVER_ROUTER = (process.env.NEXT_PUBLIC_ROUTER ?? "") as Address;
-export const SERVER_PROFILES = (process.env.NEXT_PUBLIC_PROFILES ?? "") as Address;
+/**
+ * Addresses the verifier trusts. Anything not emitted by these is rejected.
+ * Shared with the client so the server can never end up proving trades against
+ * a different deployment than the one the board is reading.
+ */
+export { FACTORY as SERVER_FACTORY, ROUTER as SERVER_ROUTER, PROFILES as SERVER_PROFILES } from "../addresses";
 
 export function hasChainConfig() {
-  return Boolean(SERVER_FACTORY && SERVER_ROUTER);
+  return Boolean(FACTORY && ROUTER && FACTORY !== ZERO && ROUTER !== ZERO);
 }
 
 /** Storage bucket for launch logos. */
