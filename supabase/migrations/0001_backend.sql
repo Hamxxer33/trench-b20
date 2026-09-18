@@ -51,13 +51,29 @@ create index if not exists trades_trader_idx on public.trades (trader, created_a
 create index if not exists trades_created_at_idx on public.trades (created_at desc);
 
 -- Close the open write policies -----------------------------------------------
+--
+-- Dropped by shape, not by name. An earlier version of this file listed names
+-- ("profiles_upsert", "logos_write") that did not match what was actually in
+-- the database ("profiles_insert", "logos_insert", "logos_update"), and
+-- `drop policy if exists` on a wrong name is a silent no-op — so three write
+-- holes stayed open while the migration reported success. Anything that is not
+-- a SELECT policy goes, whatever it was called.
 
-drop policy if exists "tokens_insert" on public.tokens;
-drop policy if exists "tokens_update" on public.tokens;
-drop policy if exists "trades_insert" on public.trades;
-drop policy if exists "profiles_upsert" on public.profiles;
-drop policy if exists "profiles_update" on public.profiles;
-drop policy if exists "logos_write" on storage.objects;
+do $$
+declare p record;
+begin
+  for p in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where cmd <> 'SELECT'
+      and (
+        (schemaname = 'public' and tablename in ('tokens', 'trades', 'profiles'))
+        or (schemaname = 'storage' and tablename = 'objects' and policyname like 'logos%')
+      )
+  loop
+    execute format('drop policy %I on %I.%I', p.policyname, p.schemaname, p.tablename);
+  end loop;
+end $$;
 
 -- Aggregation functions live in schema.sql; re-run that file after this
 -- migration to create them (it is idempotent).

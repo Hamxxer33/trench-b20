@@ -77,7 +77,7 @@ returns table (
 )
 language sql
 stable
-security definer
+security invoker
 set search_path = public
 as $$
   select
@@ -98,7 +98,7 @@ returns table (
 )
 language sql
 stable
-security definer
+security invoker
 set search_path = public
 as $$
   select
@@ -123,7 +123,7 @@ returns table (
 )
 language sql
 stable
-security definer
+security invoker
 set search_path = public
 as $$
   select
@@ -145,14 +145,20 @@ alter table public.tokens enable row level security;
 alter table public.trades enable row level security;
 alter table public.profiles enable row level security;
 
-drop policy if exists "tokens_read" on public.tokens;
-drop policy if exists "tokens_insert" on public.tokens;
-drop policy if exists "tokens_update" on public.tokens;
-drop policy if exists "trades_read" on public.trades;
-drop policy if exists "trades_insert" on public.trades;
-drop policy if exists "profiles_read" on public.profiles;
-drop policy if exists "profiles_upsert" on public.profiles;
-drop policy if exists "profiles_update" on public.profiles;
+-- Dropped by shape rather than by name: policy names have drifted between
+-- versions of this file, and `drop policy if exists` on a name that is not
+-- there is a silent no-op, which would leave a write hole open while the
+-- script still reported success.
+do $$
+declare p record;
+begin
+  for p in
+    select schemaname, tablename, policyname from pg_policies
+    where schemaname = 'public' and tablename in ('tokens', 'trades', 'profiles')
+  loop
+    execute format('drop policy %I on %I.%I', p.policyname, p.schemaname, p.tablename);
+  end loop;
+end $$;
 
 create policy "tokens_read" on public.tokens for select using (true);
 create policy "trades_read" on public.trades for select using (true);
@@ -173,7 +179,15 @@ insert into storage.buckets (id, name, public)
 values ('logos', 'logos', true)
 on conflict (id) do nothing;
 
-drop policy if exists "logos_read" on storage.objects;
-drop policy if exists "logos_write" on storage.objects;
+do $$
+declare p record;
+begin
+  for p in
+    select policyname from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and policyname like 'logos%'
+  loop
+    execute format('drop policy %I on storage.objects', p.policyname);
+  end loop;
+end $$;
 
 create policy "logos_read" on storage.objects for select using (bucket_id = 'logos');
