@@ -12,6 +12,7 @@ import { quoteByAddress } from "@/lib/quotes";
 import { referralLink } from "@/lib/referral";
 import { getToken, type TokenStats } from "@/lib/api";
 import { TokenMark } from "@/components/Mark";
+import { CopyAddress } from "@/components/CopyAddress";
 import { PairBadge } from "@/components/TokenCard";
 import { TradePanel } from "@/components/TradePanel";
 import { TradeFeed } from "@/components/TradeFeed";
@@ -104,8 +105,7 @@ export default function TokenPage() {
               ${symbol ?? ""} <span className="text-faint">/ {q.symbol}</span>
             </p>
             <p className="tnum mt-1 text-[11px] text-faint">
-              {shortAddr(token)}
-              {createdAt ? ` · launched ${timeAgo(createdAt)} ago` : ""}
+              {createdAt ? `Launched ${timeAgo(createdAt)} ago` : "Just launched"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -118,6 +118,16 @@ export default function TokenPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* The contract address is what people came for — paste it into a
+            wallet, a scanner, a group chat. Full value on screens wide enough
+            to hold it, one tap to copy on every screen. */}
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-void/60 px-3 py-2.5">
+          <span className="eyebrow shrink-0">Contract</span>
+          <code className="tnum hidden min-w-0 flex-1 truncate text-[12.5px] text-paper sm:block">{token}</code>
+          <code className="tnum min-w-0 flex-1 truncate text-[12.5px] text-paper sm:hidden">{shortAddr(token)}</code>
+          <CopyAddress value={token} label="Copy" variant="pill" className="shrink-0" />
         </div>
 
         {description && <p className="mt-4 max-w-2xl text-[14px] leading-relaxed text-mute">{description}</p>}

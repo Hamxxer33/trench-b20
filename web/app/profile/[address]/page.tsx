@@ -10,6 +10,7 @@ import { ESCROW, FACTORY, PROFILES, ZERO } from "@/lib/addresses";
 import { formatEth, shortAddr } from "@/lib/format";
 import { referralLink } from "@/lib/referral";
 import { TokenMark } from "@/components/Mark";
+import { CopyAddress } from "@/components/CopyAddress";
 import { confirmWrite, friendlyError } from "@/lib/tx";
 
 type Created = { token: Address; name: string; symbol: string; image: string };
@@ -227,18 +228,25 @@ export default function ProfilePage() {
             <p className="text-sm text-mute">No Trench launches from this wallet yet.</p>
           )}
           {tokens.map((t) => (
-            <Link
+            <div
               key={t.token}
-              href={`/token/${t.token}`}
-              className="flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 transition hover:border-lime/40 hover:bg-panel2"
+              className="relative flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 transition hover:border-lime/40 hover:bg-panel2"
             >
+              <Link
+                href={`/token/${t.token}`}
+                className="absolute inset-0 z-0"
+                aria-label={`Open ${t.name} ($${t.symbol})`}
+              />
               <TokenMark address={t.token} src={t.image || undefined} size={40} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[15px] font-semibold">{t.name}</div>
-                <div className="tnum text-[11px] text-lime">${t.symbol}</div>
+              <div className="relative z-10 min-w-0 flex-1">
+                <div className="pointer-events-none truncate text-[15px] font-semibold">{t.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="pointer-events-none tnum text-[11px] text-lime">${t.symbol}</span>
+                  <CopyAddress value={t.token} className="text-[10px]" />
+                </div>
               </div>
-              <span className="tnum text-[11px] text-faint">open →</span>
-            </Link>
+              <span className="pointer-events-none relative z-10 tnum text-[11px] text-faint">open →</span>
+            </div>
           ))}
         </div>
       </div>

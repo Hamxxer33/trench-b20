@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TokenCard } from "@/components/TokenCard";
 import { TokenMark } from "@/components/Mark";
+import { CopyAddress } from "@/components/CopyAddress";
 import { BoardControls } from "@/components/BoardControls";
 import { StatStrip } from "@/components/StatStrip";
 import { Ticker } from "@/components/Ticker";
@@ -107,13 +108,13 @@ function DashboardInner() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line">
-          <table className="w-full min-w-[42rem] border-collapse">
+          <table className="w-full min-w-[52rem] border-collapse">
             <thead>
               <tr className="bg-panel2">
-                {["#", "Token", "Pair", "Volume", "Fills", "Age"].map((h, i) => (
+                {["#", "Token", "Contract", "Pair", "Volume", "Fills", "Age"].map((h, i) => (
                   <th
                     key={h}
-                    className={`eyebrow px-4 py-2.5 ${i > 2 ? "text-right" : "text-left"}`}
+                    className={`eyebrow px-4 py-2.5 ${i > 3 ? "text-right" : "text-left"}`}
                   >
                     {h}
                   </th>
@@ -134,6 +135,9 @@ function DashboardInner() {
                           <span className="tnum text-[11px] text-lime">${r.symbol}</span>
                         </span>
                       </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <CopyAddress value={r.token} className="text-[11px]" />
                     </td>
                     <td className="px-4 py-3">
                       <span className="tnum text-xs text-mute">{qa.symbol}</span>

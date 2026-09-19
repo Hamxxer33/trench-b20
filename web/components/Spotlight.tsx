@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TokenMark } from "./Mark";
+import { CopyAddress } from "./CopyAddress";
 import { PairBadge } from "./TokenCard";
 import { formatNum, shortAddr, timeAgo } from "@/lib/format";
 import { quoteByAddress } from "@/lib/quotes";
@@ -52,9 +53,10 @@ export function Spotlight({ row }: { row: BoardRow }) {
         <Cell k="Liquidity" v="Locked" accent />
       </div>
 
-      <p className="tnum relative mt-3 text-[10px] text-faint">
-        {shortAddr(row.token)} · creator {shortAddr(row.creator)}
-      </p>
+      <div className="relative mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
+        <CopyAddress value={row.token} className="text-[10px]" />
+        <span className="tnum text-faint">creator {shortAddr(row.creator)}</span>
+      </div>
     </div>
   );
 }
