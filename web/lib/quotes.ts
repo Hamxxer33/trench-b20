@@ -1,5 +1,9 @@
 import type { Address } from "viem";
-import { ZERO } from "./addresses";
+
+// Inlined rather than imported from ./addresses so this module stays
+// dependency-free and can be unit tested directly. It is the zero address,
+// not a configurable value.
+const ZERO = "0x0000000000000000000000000000000000000000" as Address;
 
 export const ETH_QUOTE = {
   symbol: "ETH",
@@ -28,3 +32,10 @@ export function quoteByAddress(addr: string | undefined): Quote {
   const hit = STOCK_QUOTES.find((q) => q.address.toLowerCase() === addr.toLowerCase());
   return hit ?? { symbol: "TOKEN", name: "Quote", address: addr as Address, decimals: 18 };
 }
+
+/**
+ * Every asset a Trench pool can settle fees in: native ETH, plus each stock
+ * B20. Escrow keys balances per asset, so anything missing here is a balance
+ * the UI can neither show nor claim.
+ */
+export const CLAIMABLE_ASSETS: Quote[] = [ETH_QUOTE, ...STOCK_QUOTES];

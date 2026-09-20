@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { isAddress, type Address } from "viem";
-import { erc20Abi, escrowAbi, factoryAbi, profilesAbi } from "@/lib/abi";
-import { ESCROW, FACTORY, PROFILES, ZERO } from "@/lib/addresses";
-import { formatEth, shortAddr } from "@/lib/format";
+import { erc20Abi, factoryAbi, profilesAbi } from "@/lib/abi";
+import { FACTORY, PROFILES, ZERO } from "@/lib/addresses";
+import { shortAddr } from "@/lib/format";
 import { referralLink } from "@/lib/referral";
 import { TokenMark } from "@/components/Mark";
 import { CopyAddress } from "@/components/CopyAddress";
+import { FeesPanel } from "@/components/FeesPanel";
 import { confirmWrite, friendlyError } from "@/lib/tx";
 
 type Created = { token: Address; name: string; symbol: string; image: string };
@@ -31,14 +32,6 @@ export default function ProfilePage() {
     args: valid ? [account] : undefined,
     query: { enabled: valid && PROFILES !== ZERO },
   });
-  const { data: owed, refetch: refetchOwed } = useReadContract({
-    address: ESCROW,
-    abi: escrowAbi,
-    functionName: "owed",
-    args: valid ? [account, ZERO] : undefined,
-    query: { enabled: valid && ESCROW !== ZERO },
-  });
-
   const [tokens, setTokens] = useState<Created[]>([]);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -131,28 +124,6 @@ export default function ProfilePage() {
     }
   }
 
-  async function claim() {
-    if (!client) return;
-    setError("");
-    try {
-      setStatus("Claiming…");
-      const sent = await confirmWrite(client, () =>
-        writeContractAsync({
-          address: ESCROW,
-          abi: escrowAbi,
-          functionName: "claim",
-          args: [ZERO],
-        }),
-      );
-      if (!sent.ok) throw new Error("Claim reverted.");
-      await refetchOwed();
-      setStatus("Claimed");
-    } catch (e) {
-      setStatus("");
-      setError(friendlyError(e));
-    }
-  }
-
   function copyRef() {
     const link = referralLink(window.location.origin, account);
     void navigator.clipboard.writeText(link);
@@ -172,19 +143,10 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">
           <div className="eyebrow">Tokens created</div>
           <div className="tnum mt-1.5 text-3xl">{tokens.length}</div>
-        </div>
-        <div className="card p-4">
-          <div className="eyebrow">Claimable ETH</div>
-          <div className="tnum mt-1.5 text-3xl text-up">{owed ? formatEth(owed, 4) : "0"}</div>
-          {mine && (
-            <button className="btn mt-3 w-full" type="button" disabled={isPending || !owed} onClick={() => void claim()}>
-              Claim fees
-            </button>
-          )}
         </div>
         <div className="card p-4">
           <div className="eyebrow">Referral</div>
@@ -194,6 +156,10 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Every quote asset, not just ETH: a stock-paired pool pays its fees in
+          that stock, and those balances were previously unreachable here. */}
+      <FeesPanel account={account} isOwner={Boolean(mine)} />
 
       {mine && PROFILES !== ZERO && (
         <form
