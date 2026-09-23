@@ -21,7 +21,13 @@ export function Footer() {
             Board
           </Link>
           <Link className="text-mute hover:text-paper" href="/launch">
-            Launch
+            Create
+          </Link>
+          <Link className="text-mute hover:text-paper" href="/more">
+            More
+          </Link>
+          <Link className="text-mute hover:text-paper" href="/mini">
+            Mini app
           </Link>
           {deployed && (
             <>

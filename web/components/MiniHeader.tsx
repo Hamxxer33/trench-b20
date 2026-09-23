@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAccount, useConnect } from "wagmi";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { PadMark } from "./Mark";
+import { HamburgerMenu, type MenuItem } from "./HamburgerMenu";
 import { shortAddr } from "@/lib/format";
 
 type FcUser = { fid?: number; username?: string; displayName?: string; pfpUrl?: string };
 
 export function MiniHeader() {
+  const path = usePathname();
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const [user, setUser] = useState<FcUser | null>(null);
@@ -23,6 +26,22 @@ export function MiniHeader() {
         /* browser preview */
       });
   }, []);
+
+  const meHref = address ? `/mini/profile/${address}` : "/mini/profile";
+  const items: MenuItem[] = [
+    { label: "Explore", href: "/mini", on: path === "/mini" },
+    { label: "Create", href: "/mini/launch", on: path.startsWith("/mini/launch") },
+    { label: "Me", href: meHref, on: path.startsWith("/mini/profile"), hint: address ? shortAddr(address) : undefined },
+    { label: "More", href: "/mini/more", on: path.startsWith("/mini/more") },
+    { label: "Full site", href: "/" },
+    { label: "Trending", soon: true },
+    { label: "Holders", soon: true },
+    { label: "Comments", soon: true },
+    { label: "Announcements", soon: true },
+    { label: "Staking", soon: true },
+    { label: "Limit / sniper / TWAP", soon: true },
+    { label: "Multi-chain", soon: true },
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-line/80 bg-void/90 backdrop-blur-md">
@@ -47,6 +66,7 @@ export function MiniHeader() {
               {isPending ? "…" : "Use wallet"}
             </button>
           )}
+          <HamburgerMenu title="Trench" items={items} />
         </div>
       </div>
     </header>
