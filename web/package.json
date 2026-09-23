@@ -11,6 +11,8 @@
     "postinstall": "node scripts/fix-privy-clippath.mjs"
   },
   "dependencies": {
+    "@farcaster/miniapp-sdk": "^0.3.0",
+    "@farcaster/miniapp-wagmi-connector": "^2.0.0",
     "@privy-io/react-auth": "^3.42.0",
     "@privy-io/wagmi": "^4.0.17",
     "@stripe/stripe-js": "^9.16.0",

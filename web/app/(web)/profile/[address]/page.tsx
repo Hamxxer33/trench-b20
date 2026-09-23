@@ -13,6 +13,7 @@ import { TokenMark } from "@/components/Mark";
 import { CopyAddress } from "@/components/CopyAddress";
 import { FeesPanel } from "@/components/FeesPanel";
 import { confirmWrite, friendlyError } from "@/lib/tx";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 type Created = { token: Address; name: string; symbol: string; image: string };
 
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const params = useParams<{ address: string }>();
   const account = params.address as Address;
   const valid = isAddress(account);
+  const base = useAppBase();
   const { address } = useAccount();
   const mine = valid && address && account.toLowerCase() === address.toLowerCase();
   const client = usePublicClient();
@@ -199,7 +201,7 @@ export default function ProfilePage() {
               className="relative flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3 transition hover:border-lime/40 hover:bg-panel2"
             >
               <Link
-                href={`/token/${t.token}`}
+                href={withBase(base, `/token/${t.token}`)}
                 className="absolute inset-0 z-0"
                 aria-label={`Open ${t.name} ($${t.symbol})`}
               />

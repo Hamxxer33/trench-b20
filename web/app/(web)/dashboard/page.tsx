@@ -13,6 +13,7 @@ import { useBoard, type Pair, type Sort } from "@/lib/useBoard";
 import { formatNum, shortAddr, timeAgo } from "@/lib/format";
 import { quoteByAddress } from "@/lib/quotes";
 import { isDeployed } from "@/lib/addresses";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 export default function DashboardPage() {
   return (
@@ -24,6 +25,7 @@ export default function DashboardPage() {
 
 function DashboardInner() {
   const router = useRouter();
+  const base = useAppBase();
   const params = useSearchParams();
   const q = params.get("q") ?? "";
 
@@ -61,7 +63,7 @@ function DashboardInner() {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               const v = (e.target as HTMLInputElement).value.trim();
-              router.push(v ? `/dashboard?q=${encodeURIComponent(v)}` : "/dashboard");
+              router.push(v ? `${base || "/dashboard"}?q=${encodeURIComponent(v)}` : base || "/dashboard");
             }
           }}
         />
@@ -128,7 +130,7 @@ function DashboardInner() {
                   <tr key={r.token} className="border-t border-line hover:bg-panel2">
                     <td className="tnum px-4 py-3 text-xs text-faint">{i + 1}</td>
                     <td className="px-4 py-3">
-                      <Link href={`/token/${r.token}`} className="flex min-w-0 items-center gap-3">
+                      <Link href={withBase(base, `/token/${r.token}`)} className="flex min-w-0 items-center gap-3">
                         <TokenMark address={r.token} src={r.image || undefined} size={32} />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-semibold">{r.name}</span>

@@ -7,6 +7,7 @@ import { CopyAddress } from "./CopyAddress";
 import { formatNum, timeAgo } from "@/lib/format";
 import { quoteByAddress } from "@/lib/quotes";
 import { ZERO } from "@/lib/addresses";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 export type Launch = {
   token: Address;
@@ -41,6 +42,7 @@ export function TokenCard({
   launch: Launch & { volumeQuote?: number; volumeEth?: number; trades?: number };
   rank?: number;
 }) {
+  const base = useAppBase();
   const q = quoteByAddress(launch.quote);
   const vol = launch.volumeQuote ?? 0;
   const trades = launch.trades ?? 0;
@@ -52,7 +54,7 @@ export function TokenCard({
     // pointer events off, and only the copy button turns them back on.
     <div className="tile group flex flex-col gap-3 p-4">
       <Link
-        href={`/token/${launch.token}`}
+        href={withBase(base, `/token/${launch.token}`)}
         className="absolute inset-0 z-0"
         aria-label={`Open ${launch.name} ($${launch.symbol})`}
       />
@@ -108,10 +110,11 @@ function Metric({ label, value, align = "left" }: { label: string; value: string
 
 /** Compact row for lists where a grid would be too heavy (profile, search). */
 export function TokenRow({ launch }: { launch: Launch }) {
+  const base = useAppBase();
   return (
     <div className="group relative grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-line bg-panel/70 px-3 py-2.5 transition hover:border-lime/40 hover:bg-panel2">
       <Link
-        href={`/token/${launch.token}`}
+        href={withBase(base, `/token/${launch.token}`)}
         className="absolute inset-0 z-0"
         aria-label={`Open ${launch.name} ($${launch.symbol})`}
       />

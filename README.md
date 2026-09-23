@@ -72,6 +72,9 @@ npm run dev
 - `/launch` create
 - `/token/[address]` chart, market stats, live fills, trade panel, referral link
 - `/profile/[address]` identity, fee claim, global referral, launches
+- `/mini` Farcaster mini app (no extra login — uses the in-app wallet)
+
+Farcaster Mini App lives at `/mini`. It auto-uses the in-client wallet (no Privy login). Preview in Warpcast developer tools after deploying, then sign `/.well-known/farcaster.json` for the live domain.
 
 Sort by New, Top volume or Most traded; filter by ETH or stock pairs. Volume on
 a tile is denominated in that pool's own quote asset, so an AAPL-paired token

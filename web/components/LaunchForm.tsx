@@ -12,9 +12,11 @@ import { confirmWrite, friendlyError } from "@/lib/tx";
 import { indexToken } from "@/lib/supabase";
 import { LogoDrop } from "./LogoDrop";
 import type { Address, Hex } from "viem";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 export function LaunchForm() {
   const router = useRouter();
+  const base = useAppBase();
   const { address, isConnected } = useAccount();
   const client = usePublicClient();
   const { writeContractAsync, isPending } = useWriteContract();
@@ -41,7 +43,7 @@ export function LaunchForm() {
       return;
     }
     if (!isConnected || !address || !client) {
-      setError("Connect a wallet on Base first.");
+      setError(base ? "Waiting for the Farcaster wallet on Base." : "Connect a wallet on Base first.");
       return;
     }
     if (!name.trim() || !symbol.trim()) {
@@ -125,7 +127,7 @@ export function LaunchForm() {
       // is all it needs — nothing typed above is taken on trust.
       void indexToken({ tx_hash: sent.hash, address: token });
       setStatus(`Live · ${shortAddr(sent.hash)}`);
-      router.push(`/token/${token}`);
+      router.push(withBase(base, `/token/${token}`));
     } catch (e) {
       setStatus("");
       setError(friendlyError(e));

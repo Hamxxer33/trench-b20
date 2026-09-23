@@ -7,9 +7,11 @@ import { useLaunches } from "@/lib/useLaunches";
 import { searchLaunches } from "@/lib/stats";
 import { TokenMark } from "./Mark";
 import { shortAddr } from "@/lib/format";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 export function SearchBar() {
   const router = useRouter();
+  const base = useAppBase();
   const { launches } = useLaunches();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -28,23 +30,23 @@ export function SearchBar() {
   function go(token?: string) {
     const query = q.trim();
     if (token) {
-      router.push(`/token/${token}`);
+      router.push(withBase(base, `/token/${token}`));
       setOpen(false);
       setQ("");
       return;
     }
     if (isAddress(query)) {
-      router.push(`/token/${query}`);
+      router.push(withBase(base, `/token/${query}`));
       setOpen(false);
       setQ("");
       return;
     }
-    router.push(`/dashboard?q=${encodeURIComponent(query)}`);
+    router.push(base ? `${base}?q=${encodeURIComponent(query)}` : `/dashboard?q=${encodeURIComponent(query)}`);
     setOpen(false);
   }
 
   return (
-    <div ref={box} className="relative hidden min-w-0 flex-1 sm:block md:max-w-sm">
+    <div ref={box} className={`relative min-w-0 flex-1 md:max-w-sm ${base ? "block" : "hidden sm:block"}`}>
       <input
         className="field h-9 py-1 text-sm"
         placeholder="Search token, ticker, or 0x…"

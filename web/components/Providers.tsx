@@ -8,6 +8,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { config } from "@/lib/wagmi";
 import { PRIVY_APP_ID, privyConfig } from "@/lib/privy";
 import { captureReferralFromUrl } from "@/lib/referral";
+import { AppBaseProvider } from "@/lib/appBase";
 
 function ReferralCapture() {
   useEffect(() => {
@@ -30,23 +31,27 @@ export function Providers({ children }: { children: ReactNode }) {
 
   if (!PRIVY_APP_ID) {
     return (
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <ReferralCapture />
-          {children}
-        </QueryClientProvider>
-      </WagmiProvider>
+      <AppBaseProvider base="">
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            <ReferralCapture />
+            {children}
+          </QueryClientProvider>
+        </WagmiProvider>
+      </AppBaseProvider>
     );
   }
 
   return (
-    <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
-      <QueryClientProvider client={queryClient}>
-        <PrivyWagmiProvider config={config}>
-          <ReferralCapture />
-          {children}
-        </PrivyWagmiProvider>
-      </QueryClientProvider>
-    </PrivyProvider>
+    <AppBaseProvider base="">
+      <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+        <QueryClientProvider client={queryClient}>
+          <PrivyWagmiProvider config={config}>
+            <ReferralCapture />
+            {children}
+          </PrivyWagmiProvider>
+        </QueryClientProvider>
+      </PrivyProvider>
+    </AppBaseProvider>
   );
 }

@@ -17,12 +17,15 @@ import { PairBadge } from "@/components/TokenCard";
 import { TradePanel } from "@/components/TradePanel";
 import { TradeFeed } from "@/components/TradeFeed";
 import { PriceChart } from "@/components/PriceChart";
+import { ComingSoonCard } from "@/components/ComingSoon";
+import { useAppBase, withBase } from "@/lib/appBase";
 
 export default function TokenPage() {
   const params = useParams<{ address: string }>();
   const token = params.address as Address;
   const valid = isAddress(token);
   const { address } = useAccount();
+  const base = useAppBase();
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<TokenStats | null>(null);
 
@@ -159,13 +162,12 @@ export default function TokenPage() {
             </a>
           )}
           {creator && creator !== ZERO && (
-            <Link className="pill hover:border-lime hover:text-lime" href={`/profile/${creator}`}>
+            <Link className="pill hover:border-lime hover:text-lime" href={withBase(base, `/profile/${creator}`)}>
               creator {shortAddr(creator)}
             </Link>
           )}
         </div>
       </div>
-
       {/* Market stats */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 lg:grid-cols-6">
         <Stat k="FDV" v={fdv ? `${formatNum(fdv, 3)} ETH` : "—"} />
@@ -193,6 +195,14 @@ export default function TokenPage() {
             referrer. For the first 20 seconds the fee starts at 99% and decays to 1% — anti-snipe,
             and the excess goes to the platform.
           </div>
+          {base === "/mini" && (
+            <div className="grid gap-2">
+              <ComingSoonCard title="Holders" blurb="Labeled holder list: creator, LP, you." />
+              <ComingSoonCard title="Comments" blurb="Public thread on this token." />
+              <ComingSoonCard title="Announcements" blurb="Creator-signed updates." />
+              <ComingSoonCard title="Staking" blurb="Optional reward vault after launch." />
+            </div>
+          )}
         </div>
       </div>
     </div>
